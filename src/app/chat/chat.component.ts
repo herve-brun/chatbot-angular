@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpDownloadProgressEvent, HttpEvent, HttpEventType } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,11 +8,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { map } from 'rxjs/operators';
 import * as marked from 'marked'; // Import the marked library
+import markedMoreLists from 'marked-more-lists';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+
+marked.use(markedMoreLists());
 
 export interface Message {
   sender: 'user' | 'bot';
-  text: SafeHtml | Promise<SafeHtml>;
+  text: SafeHtml | Promise<SafeHtml>
 }
 
 @Component({
@@ -42,27 +45,36 @@ export class ChatComponent implements OnInit, OnDestroy {
   ngOnInit(): void {}
 
   sendMessage(): void {
+    this.responses.push({ sender: 'user', text: this.message });
+    const botMessage : Message = {sender: 'bot', text : 'sending ...'};
+    this.responses.push(botMessage);
+
     // const evsrc: EventSource = new EventSource(`${this.apiUrl}?message=${this.message}`);
     // evsrc.onmessage = (event) => {
-    //   console.log(event.data);
     //   this.responses.push(event.data);
     // };
 
-    this.responses.push({ sender: 'user', text: this.message });
+
     this.http
-      .get(`${this.apiUrl}?message=${this.message}`, { responseType: 'text' })
+      .get(`${this.apiUrl}?message=${this.message}`, {
+        reportProgress: true,
+        observe: 'events',
+        responseType: 'text'
+      })
       .pipe(
         map((response: any) => response) // Ensure the response is properly streamed
       )
       .subscribe({
-        next: (data: string) => {
-          // Sanitize the HTML to prevent XSS attacks
-          const html = marked.parse(data);
-          const message: Message = {
-            sender: 'bot', // Or get this from user authentication
-            text: html,
-          };
-          this.responses.push(message); // Add each response to the array
+        next: (event: HttpEvent<string>) => {
+          if (event.type === HttpEventType.DownloadProgress) {
+            // Sanitize the HTML to prevent XSS attacks
+            const html = marked.parse(
+              ((event as HttpDownloadProgressEvent).partialText!).replaceAll(/(data:|\n)/g, '')
+            );
+            console.debug(botMessage);
+            botMessage.text = `${html.valueOf()}`;
+            // this.responses.push(message); // Add each response to the array
+          }
         },
         error: (error) => {
           console.error('Error fetching data:', error);
