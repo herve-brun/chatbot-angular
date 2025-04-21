@@ -72,7 +72,7 @@ export class ChatComponent implements OnInit, OnDestroy {
               ((event as HttpDownloadProgressEvent).partialText!).replaceAll(/(data:|\n)/g, '')
             );
             console.debug(botMessage);
-            botMessage.text = `${html.valueOf()}`;
+            botMessage.text = html;
             // this.responses.push(message); // Add each response to the array
           }
         },
