@@ -23,8 +23,8 @@
       <div *ngFor="let message of responses"
           class="message-text"
            [class.user]="message.sender === 'user'"
-           [class.bot]="message.sender === 'bot'">
-        <span class="message-text" [innerHTML]="message.text"></span>
+           [class.bot]="message.sender === 'bot'"
+           [innerHTML]="message.text">
       </div>
     </div>
 

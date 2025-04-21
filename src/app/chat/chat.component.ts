@@ -45,7 +45,8 @@ export class ChatComponent implements OnInit, OnDestroy {
   ngOnInit(): void {}
 
   sendMessage(): void {
-    this.responses.push({ sender: 'user', text: this.message });
+    let html = marked.parse(this.message);
+    this.responses.push({ sender: 'user', text: html });
     const botMessage : Message = {sender: 'bot', text : 'sending ...'};
     this.responses.push(botMessage);
 
@@ -68,7 +69,7 @@ export class ChatComponent implements OnInit, OnDestroy {
         next: (event: HttpEvent<string>) => {
           if (event.type === HttpEventType.DownloadProgress) {
             // Sanitize the HTML to prevent XSS attacks
-            const html = marked.parse(
+            html = marked.parse(
               ((event as HttpDownloadProgressEvent).partialText!).replaceAll(/(data:|\n)/g, '')
             );
             console.debug(botMessage);
